@@ -42,6 +42,7 @@ class TetrisGame
     grid_x = (1280 - (@grid_w * boxsize)) / 2
     grid_y = (720 - ((@grid_h - 2) * boxsize)) / 2
     @args.outputs.solids << [ grid_x + (x * boxsize), (720 - grid_y) - (y * boxsize), boxsize, boxsize, @color_index[color] ]
+    @args.outputs.borders << [ grid_x + (x * boxsize), (720 - grid_y) - (y * boxsize), boxsize, boxsize, 255, 255, 255, 255 ]
   end
 
   def render_grid
@@ -132,6 +133,13 @@ class TetrisGame
     puts @current_piece
   end
 
+  def rotate_current_piece_left
+    @current_piece = @current_piece.transpose.map(&:reverse)
+    if (@current_piece_x + @current_piece.length) >= @grid_w
+      @current_piece_x = @grid_w - @current_piece.length
+    end
+  end
+
   def handle_user_input
     k = @args.inputs.keyboard
     if k.key_down.left
@@ -140,6 +148,8 @@ class TetrisGame
       @current_piece_x +=  1 if @current_piece_x + @current_piece.length < @grid_w
     elsif k.key_down.down || k.key_held.down
       @next_move -= 10
+    elsif k.key_down.up
+      rotate_current_piece_left
     end
   end
 
