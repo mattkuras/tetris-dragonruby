@@ -7,8 +7,14 @@ end
 
 
 class TetrisGame
+  def tick
+    iterate
+    render
+  end
+
   def initialize(args)
     @args = args
+    @next_piece = nil
     @next_move = 30
     @score = 0
     @gameover = false
@@ -34,7 +40,12 @@ class TetrisGame
       end
     end
     select_next_piece
+    select_next_piece
   end
+
+  ######################################
+  # render methods
+  ######################################
 
   # x and y are positions in the grid, not pixels
   def render_cube(x, y, color)
@@ -53,11 +64,7 @@ class TetrisGame
     end
   end
 
-  def render_grid_border
-    x = -1
-    y = -1
-    w = @grid_w + 1
-    h = @grid_h + 1
+  def render_grid_border(x, y, w, h)
     color = 0
 
     for i in x..(x + w) do
@@ -71,23 +78,48 @@ class TetrisGame
   end
 
   def render_background
+    @args.outputs.sprites << [75, 300, 300, 300, 'workforce.png']
     @args.outputs.solids << [0, 0, 1280, 720, 0, 0, 0]
-    render_grid_border
+    render_grid_border(-1, -1, @grid_w + 1, @grid_h + 1)
   end
 
   def render_current_piece
-    for x in 0...@current_piece.length do
-      for y in 0...@current_piece[x].length do
-        render_cube(@current_piece_x + x, @current_piece_y + y, @current_piece[x][y]) if @current_piece[x][y] != 0
+    render_piece(@current_piece, @current_piece_x, @current_piece_y)
+  end
+
+  def render_piece(piece, piece_x, piece_y)
+    for x in 0...piece.length do
+      for y in 0...piece[x].length do
+        render_cube(piece_x + x, piece_y + y, piece[x][y]) if piece[x][y] != 0
       end
     end
+  end
+
+  def render_next_piece
+    render_grid_border(13, 2, 7, 7)
+    center_x = (8 -@next_piece.length) / 2
+    center_y = (8 - @next_piece[0].length) /2
+    render_piece(@next_piece, 13 + center_x, 2 + center_y)
+    @args.outputs.labels << [910, 650, "Next piece", 10, 255, 255, 255, 255]
+  end
+
+  def render_score
+    @args.outputs.labels << [ 75, 75, "Score: #{@score}", 10, 255, 255, 255]
+    @args.outputs.labels << [200, 450, "GAME OVER", 100, 255, 255, 255, 255] if @gameover
   end
 
   def render
     render_background
     render_grid
+    render_next_piece
     render_current_piece
+    render_score
   end
+
+
+  ######################################
+  # flow methods
+  ######################################
 
   def current_piece_colliding
     for x in 0...@current_piece.length do
@@ -113,15 +145,38 @@ class TetrisGame
         end
       end
     end
-    @current_piece_y = 0
-    @current_piece_x = 5
+
+    for y in 0...@grid_h
+      full = true
+      for x in 0...@grid_w
+        if @grid[x][y] == 0
+          full = false
+          break
+        end
+      end
+      if full
+        @score +=1
+        for i in y.downto(1) do
+          for j in 0...@grid_w
+            @grid[j][i] = @grid[j][i-1]
+          end
+        end
+        for i in 0...@grid_w
+          @grid[i][0] = 0
+        end
+      end
+    end
     select_next_piece
+    if current_piece_colliding
+      @gameover = true
+    end
   end
 
   def select_next_piece
+    @current_piece = @next_piece
     x = rand(6) + 1
     puts x
-    @current_piece = case x
+    @next_piece = case x
       when 1 then [[0, x], [0, x], [x, x]]
       when 2 then [[x, x], [x, 0], [x, 0]]
       when 3 then [[x, x, x, x]]
@@ -130,8 +185,13 @@ class TetrisGame
       when 6 then [[x, x], [x, x]]
       when 7 then [[0, x], [x, x], [0, x]]
     end
-    puts @current_piece
+    @current_piece_x = 5
+    @current_piece_y = 0
   end
+
+  #####################################
+  # user inputs
+  #####################################
 
   def rotate_current_piece_left
     @current_piece = @current_piece.transpose.map(&:reverse)
@@ -154,6 +214,13 @@ class TetrisGame
   end
 
   def iterate
+    if @gameover
+      if @args.inputs.keyboard.key_down.space
+        $gtk.reset
+      end
+      return
+    end
+
     handle_user_input
     @next_move -= 1
     if @next_move <= 0
@@ -164,10 +231,5 @@ class TetrisGame
       end
       @next_move = 30
     end
-  end
-
-  def tick
-    iterate
-    render
   end
 end
