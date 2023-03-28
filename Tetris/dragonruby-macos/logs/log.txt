@@ -1,0 +1,12 @@
+DragonRuby GTK Log Messages. Set $gtk.log_level = :off to disable logging to the Console/HUD (log messages will still be written here). Log options are: :on, :off.
+* WARNING: Method invocation on a nil value detected.
+The method + with args 0 was invoked at app/main.rb:79, but the local variable has a
+value of nil (the invocation of + was suppressed). Consider setting
+a default value for the local variable to avoid null reference exceptions later on."
+
+** app/main.rb:79:in render_current_piece
+** app/main.rb:78:in render_current_piece
+** app/main.rb:88:in render
+** app/main.rb:161:in tick
+** app/main.rb:5:in tick
+
